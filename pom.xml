@@ -18,6 +18,7 @@
   <modules>
     <module>Basic</module>
     <module>Advanced</module>
+    <module>TestSuite</module>
   </modules>
 	
 	<distributionManagement>

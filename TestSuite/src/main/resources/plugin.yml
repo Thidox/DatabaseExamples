@@ -1,0 +1,7 @@
+name: TestSuite
+main: nl.giantit.minecraft.database.testsuite.TestSuite
+version: 1.0
+commands:
+    testsuite:
+        description: its a command!
+        usage: /testsuite
