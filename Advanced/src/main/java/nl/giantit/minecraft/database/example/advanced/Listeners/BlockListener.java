@@ -1,7 +1,11 @@
 package nl.giantit.minecraft.database.example.advanced.Listeners;
 
-import nl.giantit.minecraft.database.iDriver;
+import nl.giantit.minecraft.database.Driver;
+import nl.giantit.minecraft.database.QueryResult;
 import nl.giantit.minecraft.database.example.advanced.dbExample;
+import nl.giantit.minecraft.database.query.InsertQuery;
+import nl.giantit.minecraft.database.query.SelectQuery;
+import nl.giantit.minecraft.database.query.UpdateQuery;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -11,12 +15,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import nl.giantit.minecraft.Database.QueryResult;
 
 public class BlockListener implements Listener {
 
 	private dbExample plugin;
-	private iDriver db;
+	private Driver db;
 	
 	public BlockListener(dbExample plugin) {
 		this.plugin = plugin;
@@ -24,10 +27,11 @@ public class BlockListener implements Listener {
 	}
 	
 	private Boolean checkPlayerExists(Player p) {
-		HashMap<String, String> where = new HashMap<String, String>();
-		where.put("player", p.getName());
+		SelectQuery sQ = db.select("id");
+		sQ.from("#__playerData");
+		sQ.where("player", p.getName());
 		
-		QueryResult resSet = db.select("id").from("#__playerData").where(where).execQuery();
+		QueryResult resSet = sQ.exec();
 		
 		return resSet.size() == 1;
 	}
@@ -36,6 +40,7 @@ public class BlockListener implements Listener {
 		Player p = e.getPlayer();
 		
 		if(!this.checkPlayerExists(p)) {
+			// We are going to have to insert!
 			ArrayList<String> fields = new ArrayList<String>();
 			fields.add("player");
 			fields.add("blocksBroken");
@@ -54,19 +59,19 @@ public class BlockListener implements Listener {
 				values.put(i, value);
 			}
 			
-			db.insert("#__playerData", fields, values);
+			InsertQuery iQ = db.insert("#__playerData");
+			iQ.addFields(fields);
+			iQ.addRow();
+			iQ.assignValue("player", p.getName());
+			iQ.assignValue("blocksBroken", "1", InsertQuery.ValueType.RAW);
 			
-			// We are going to have to insert!
+			iQ.exec();
 		}else{
-			HashMap<String, HashMap<String, String>> fields = new HashMap<String, HashMap<String, String>>();
-			HashMap<String, String> data = new HashMap<String, String>();
-			
-			data.put("kind", "INT"); // Hacky way of making it raw
-			data.put("data", "blocksBroken + 1"); // Make the database increment the current value of column blocksBroken by 1
-			fields.put("blocksBroken", data);
-			
-			db.update("#__playerData").set(fields, true).updateQuery();
 			// We can update!
+			UpdateQuery uQ = db.update("#__playerData");
+			uQ.set("blocksBroken", "blocksBroken + 1", UpdateQuery.ValueType.SETRAW); // Make the database increment the current value of column blocksBroken by 1
+			
+			uQ.exec();
 		}
 	}
 

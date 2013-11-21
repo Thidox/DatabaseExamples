@@ -1,9 +1,13 @@
 package nl.giantit.minecraft.database.example.advanced;
 
 import nl.giantit.minecraft.database.Database;
-import nl.giantit.minecraft.database.iDriver;
+import nl.giantit.minecraft.database.Driver;
+import nl.giantit.minecraft.database.QueryResult;
+import nl.giantit.minecraft.database.QueryResult.QueryRow;
 import nl.giantit.minecraft.database.example.advanced.Listeners.BlockListener;
 import nl.giantit.minecraft.database.example.advanced.Listeners.PlayerListener;
+import nl.giantit.minecraft.database.query.DeleteQuery;
+import nl.giantit.minecraft.database.query.SelectQuery;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,21 +15,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
-import nl.giantit.minecraft.database.QueryResult;
-import nl.giantit.minecraft.database.QueryResult.QueryRow;
 
 public class dbExample extends JavaPlugin {
 
 	private Database dbDriver;
 
 	private HashMap<String, Integer> getPlayerData(Player p) {
-		iDriver db = this.dbDriver.getEngine();
+		Driver db = this.dbDriver.getEngine();
 		HashMap<String, Integer> data = new HashMap<String, Integer>();
 
 		HashMap<String, String> where = new HashMap<String, String>();
 		where.put("player", p.getName());
 
-		QueryResult resSet = db.select("timesClicked", "blocksBroken", "movesMade").from("#__playerData").where(where).execQuery();
+		SelectQuery sQ = db.select("timesClicked", "blocksBroken", "movesMade");
+		sQ.from("#__playerData");
+		sQ.where("player", p.getName());
+		
+		QueryResult resSet = sQ.exec();
 
 		if(resSet.size() > 0) {
 			QueryRow res = resSet.getRow();
@@ -102,17 +108,17 @@ public class dbExample extends JavaPlugin {
 				sender.sendMessage("Sorry, no data for you yet, try moving around!");
 			}
 		}else{
-			HashMap<String, String> where = new HashMap<String, String>();
-			where.put("player", sender.getName());
-
-			this.dbDriver.getEngine().delete("#__playerData").where(where).updateQuery();
+			DeleteQuery dQ = this.dbDriver.getEngine().delete("#__playerData");
+			dQ.where("player", sender.getName());
+			dQ.exec();
+			
 			sender.sendMessage("Your statistics have been reset!");
 		}
 
 		return true;
 	}
 
-	public iDriver getDb() {
+	public Driver getDb() {
 		return this.dbDriver.getEngine();
 	}
 }

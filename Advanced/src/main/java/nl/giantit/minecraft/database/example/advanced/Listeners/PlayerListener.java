@@ -1,7 +1,11 @@
 package nl.giantit.minecraft.database.example.advanced.Listeners;
 
-import nl.giantit.minecraft.database.iDriver;
+import nl.giantit.minecraft.database.Driver;
+import nl.giantit.minecraft.database.QueryResult;
 import nl.giantit.minecraft.database.example.advanced.dbExample;
+import nl.giantit.minecraft.database.query.InsertQuery;
+import nl.giantit.minecraft.database.query.SelectQuery;
+import nl.giantit.minecraft.database.query.UpdateQuery;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -12,12 +16,11 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import nl.giantit.minecraft.Database.QueryResult;
 
 public class PlayerListener implements Listener {
 
 	private dbExample plugin;
-	private iDriver db;
+	private Driver db;
 	
 	public PlayerListener(dbExample plugin) {
 		this.plugin = plugin;
@@ -25,10 +28,11 @@ public class PlayerListener implements Listener {
 	}
 	
 	private Boolean checkPlayerExists(Player p) {
-		HashMap<String, String> where = new HashMap<String, String>();
-		where.put("player", p.getName());
+		SelectQuery sQ = db.select("id");
+		sQ.from("#__playerData");
+		sQ.where("player", p.getName());
 		
-		QueryResult resSet = db.select("id").from("#__playerData").where(where).execQuery();
+		QueryResult resSet = sQ.exec();
 		
 		return resSet.size() == 1;
 	}
@@ -37,37 +41,24 @@ public class PlayerListener implements Listener {
 		Player p = e.getPlayer();
 		
 		if(!this.checkPlayerExists(p)) {
+			// We are going to have to insert!
 			ArrayList<String> fields = new ArrayList<String>();
 			fields.add("player");
 			fields.add("timesClicked");
 			
-			HashMap<Integer, HashMap<String, String>> values = new HashMap<Integer, HashMap<String, String>>();
-			for(int i = 0; i < fields.size(); i++) {
-				HashMap<String, String> value = new HashMap<String, String>();
-				String field = fields.get(i);
-				if(field.equalsIgnoreCase("player")) {
-					value.put("data", p.getName());
-				}else if(field.equalsIgnoreCase("timesClicked")) {
-					value.put("kind", "INT");
-					value.put("data", "1");
-				}
-				
-				values.put(i, value);
-			}
+			InsertQuery iQ = db.insert("#__playerData");
+			iQ.addFields(fields);
+			iQ.addRow();
+			iQ.assignValue("player", p.getName());
+			iQ.assignValue("timesClicked", "1", InsertQuery.ValueType.RAW);
 			
-			db.insert("#__playerData", fields, values).updateQuery();
-			
-			// We are going to have to insert!
+			iQ.exec();
 		}else{
-			HashMap<String, HashMap<String, String>> fields = new HashMap<String, HashMap<String, String>>();
-			HashMap<String, String> data = new HashMap<String, String>();
-			
-			data.put("kind", "INT"); // Hacky way of making it raw
-			data.put("data", "timesClicked + 1"); // Make the database increment the current value of column timesClicked by 1
-			fields.put("timesClicked", data);
-			
-			db.update("#__playerData").set(fields, true).updateQuery();
 			// We can update!
+			UpdateQuery uQ = db.update("#__playerData");
+			uQ.set("timesClicked", "timesClicked + 1", UpdateQuery.ValueType.SETRAW); // Make the database increment the current value of column timesClicked by 1
+			
+			uQ.exec();
 		}
 	}
 	
@@ -75,37 +66,24 @@ public class PlayerListener implements Listener {
 		Player p = e.getPlayer();
 		
 		if(!this.checkPlayerExists(p)) {
+			// We are going to have to insert!
 			ArrayList<String> fields = new ArrayList<String>();
 			fields.add("player");
 			fields.add("movesMade");
 			
-			HashMap<Integer, HashMap<String, String>> values = new HashMap<Integer, HashMap<String, String>>();
-			for(int i = 0; i < fields.size(); i++) {
-				HashMap<String, String> value = new HashMap<String, String>();
-				String field = fields.get(i);
-				if(field.equalsIgnoreCase("player")) {
-					value.put("data", p.getName());
-				}else if(field.equalsIgnoreCase("movesMade")) {
-					value.put("kind", "INT");
-					value.put("data", "1");
-				}
-				
-				values.put(i, value);
-			}
+			InsertQuery iQ = db.insert("#__playerData");
+			iQ.addFields(fields);
+			iQ.addRow();
+			iQ.assignValue("player", p.getName());
+			iQ.assignValue("movesMade", "1", InsertQuery.ValueType.RAW);
 			
-			db.insert("#__playerData", fields, values).updateQuery();
-			
-			// We are going to have to insert!
+			iQ.exec();
 		}else{
-			HashMap<String, HashMap<String, String>> fields = new HashMap<String, HashMap<String, String>>();
-			HashMap<String, String> data = new HashMap<String, String>();
-			
-			data.put("kind", "INT"); // Hacky way of making it raw
-			data.put("data", "movesMade + 1"); // Make the database increment the current value of column stepsMade by 1
-			fields.put("movesMade", data);
-			
-			db.update("#__playerData").set(fields, true).updateQuery();
 			// We can update!
+			UpdateQuery uQ = db.update("#__playerData");
+			uQ.set("movesMade", "movesMade + 1", UpdateQuery.ValueType.SETRAW); // Make the database increment the current value of column movesMade by 1
+			
+			uQ.exec();
 		}
 	}
 
