@@ -1,5 +1,5 @@
 name: dbExample
-main: nl.giantit.minecraft.dbExample.dbExample
+main: nl.giantit.minecraft.database.example.basic.dbExample
 version: dbExample
 commands:
     dbExample:

@@ -1,7 +1,12 @@
 package nl.giantit.minecraft.database.example.basic;
 
-import nl.giantit.minecraft.Database.Database;
-import nl.giantit.minecraft.Database.iDriver;
+import nl.giantit.minecraft.database.Database;
+import nl.giantit.minecraft.database.Driver;
+import nl.giantit.minecraft.database.QueryResult;
+import nl.giantit.minecraft.database.QueryResult.QueryRow;
+import nl.giantit.minecraft.database.query.DeleteQuery;
+import nl.giantit.minecraft.database.query.InsertQuery;
+import nl.giantit.minecraft.database.query.SelectQuery;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,14 +16,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
-import nl.giantit.minecraft.Database.QueryResult;
-import nl.giantit.minecraft.Database.QueryResult.QueryRow;
 
 public class dbExample extends JavaPlugin {
 
 	private Database dbDriver;
-	
-	
+
 	@Override
 	public void onEnable() {
 		if(!getDataFolder().exists()) {
@@ -26,27 +28,28 @@ public class dbExample extends JavaPlugin {
 			getDataFolder().setWritable(true);
 			getDataFolder().setExecutable(true);
 		}
-		
+
 		HashMap<String, String> dbData = new HashMap<String, String>();
 		dbData.put("driver", "SQLite");
 		dbData.put("database", "dbExample");
 		dbData.put("prefix", "basic_");
 		dbData.put("debug", "true");
-		
+
 		this.dbDriver = Database.Obtain(this, null, dbData);
-		
+
 		new InitDatabase(this);
 	}
-	
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		if(args.length == 0) {
 			Boolean isLucky;
-			
-			HashMap<String, String> where = new HashMap<String, String>();
-			where.put("player", sender.getName());
-			
-			QueryResult resSet = this.dbDriver.getEngine().select("lucky").from("#__playerData").where(where).execQuery();
+
+			SelectQuery sQ = this.dbDriver.getEngine().select("lucky");
+			sQ.from("#__playerData");
+			sQ.where("player", sender.getName());
+
+			QueryResult resSet = sQ.exec();
 			if(resSet.size() > 0) {
 				QueryRow res = resSet.getRow();
 				isLucky = res.getString("lucky").equals("1");
@@ -57,51 +60,40 @@ public class dbExample extends JavaPlugin {
 				ArrayList<String> fields = new ArrayList<String>();
 				fields.add("player");
 				fields.add("lucky");
+
+				InsertQuery iQ = this.dbDriver.getEngine().insert("#__playerData");
+				iQ.addFields(fields);
 				
-				HashMap<Integer, HashMap<String, String>> values = new HashMap<Integer, HashMap<String, String>>();
-				
-				for(int i = 0; i < fields.size(); i++) {
-					HashMap<String, String> value = new HashMap<String, String>();
-					String field = fields.get(i);
-					if(field.equalsIgnoreCase("player")) {
-						value.put("data", sender.getName());
-					}else if(field.equalsIgnoreCase("lucky")) {
-						value.put("kind", "INT");
-						value.put("data", String.valueOf(x));
-					}
-					
-					values.put(i, value);
-				}
-				
-				this.dbDriver.getEngine().insert("#__playerData", fields, values).Finalize().updateQuery();
-				
+				iQ.addRow();
+				iQ.assignValue("player", sender.getName());
+				iQ.assignValue("lucky", String.valueOf(x), InsertQuery.ValueType.RAW);
+				iQ.exec();
+
 				isLucky = x == 1;
 			}
-			
+
 			if(isLucky) {
 				sender.sendMessage("You are lucky!");
 			}else{
 				sender.sendMessage("Sorry, you are not lucky! :(");
 			}
-			
+
 			if(sender instanceof Player) {
 				sender.sendMessage("type /dbExample reset to try again!");
 			}else{
 				sender.sendMessage("type dbExample reset to try again!");
 			}
 		}else{
-			HashMap<String, String> where = new HashMap<String, String>();
-			where.put("player", sender.getName());
-			
-			this.dbDriver.getEngine().delete("#__playerData").where(where).updateQuery();
+			DeleteQuery dQ = this.dbDriver.getEngine().delete("#__playerData");
+			dQ.where("player", sender.getName());
+			dQ.exec();
 			sender.sendMessage("Your luckyness has been reset!");
 		}
-					
-		
+
 		return true;
 	}
-	
-	public iDriver getDb() {
+
+	public Driver getDb() {
 		return this.dbDriver.getEngine();
 	}
 }
