@@ -49,7 +49,7 @@
         <dependency>
             <groupId>nl.giantit.minecraft</groupId>
             <artifactId>dbDriver</artifactId>
-            <version>1.3.DEV-SNAPSHOT</version>
+            <version>1.3.2</version>
         </dependency>
     </dependencies>
 </project>
